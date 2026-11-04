@@ -9,6 +9,8 @@ on:
 
 permissions:
   contents: write
+  issues: write
+  administration: write
   pages: write
   id-token: write
 
@@ -35,7 +37,7 @@ jobs:
 
       - name: Terraform Apply (Auto-Approved)
         env:
-          GITHUB_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TF_VAR_github_owner: ${{ github.repository_owner }}
           TF_VAR_github_repository: ${{ github.event.repository.name }}
         run: |
