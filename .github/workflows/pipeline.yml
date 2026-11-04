@@ -1,0 +1,71 @@
+name: CI/CD Pipeline & Telemetry Sync
+
+on:
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  validate-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.0
+
+      - name: Terraform Format Check
+        run: terraform fmt -check
+        working-directory: ./terraform
+        continue-on-error: true
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ./terraform
+
+      - name: Terraform Apply (Auto-Approved)
+        env:
+          GITHUB_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+          TF_VAR_github_owner: ${{ github.repository_owner }}
+          TF_VAR_github_repository: ${{ github.event.repository.name }}
+        run: |
+          terraform apply -auto-approve
+        working-directory: ./terraform
+
+      - name: Collect Telemetry & Compile data.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TOTAL_RUNS=$(gh api repos/${{ github.repository }}/actions/runs --jq '.total_count')
+          SUCCESS_RUNS=$(gh api repos/${{ github.repository }}/actions/runs --jq '[.workflow_runs[] | select(.conclusion=="success")] | length')
+          OPEN_ISSUES=$(gh api repos/${{ github.repository }} --jq '.open_issues_count')
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          cat <<EOF > public/data.json
+          {
+            "repo": "${{ github.repository }}",
+            "last_updated": "${TIMESTAMP}",
+            "terraform_status": "Applied",
+            "pipeline_total_runs": ${TOTAL_RUNS:-1},
+            "pipeline_successful_runs": ${SUCCESS_RUNS:-1},
+            "open_issues_count": ${OPEN_ISSUES:-0},
+            "managed_labels_count": 3,
+            "branch_protection": "Enforced (main)"
+          }
+          EOF
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public

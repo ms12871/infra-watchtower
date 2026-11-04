@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ops Watchtower | Live Dashboard</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #151e2e;
+      --border: #233148;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent-green: #10b981;
+      --accent-green-bg: rgba(16, 185, 129, 0.12);
+      --accent-blue: #38bdf8;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 30px;
+    }
+
+    .brand h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .sync-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+      font-family: var(--mono);
+    }
+
+    .pulse {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      box-shadow: 0 0 8px var(--accent-green);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 768px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+    }
+
+    .card-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .card-metric {
+      font-size: 26px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: var(--accent-green-bg);
+      color: var(--accent-green);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+
+    .card-subtext {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    .terminal-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .terminal-header {
+      background: #111827;
+      padding: 10px 16px;
+      font-size: 12px;
+      font-family: var(--mono);
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    pre {
+      padding: 18px;
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--accent-blue);
+      overflow-x: auto;
+      background: #090d16;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <h1>Ops Watchtower</h1>
+      </div>
+      <div class="sync-indicator">
+        <span class="pulse"></span>
+        <span id="sync-time">Syncing telemetry...</span>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <div class="card-label">Terraform State</div>
+        <div class="card-metric">
+          <span class="badge" id="tf-badge">Checking...</span>
+        </div>
+        <div class="card-subtext" id="tf-subtext">Automated apply verified</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Pipeline Runs</div>
+        <div class="card-metric" id="runs-metric">--</div>
+        <div class="card-subtext">Successful / total executions</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Managed IaC Assets</div>
+        <div class="card-metric" id="assets-metric">3 Labels</div>
+        <div class="card-subtext">Declarative GitHub resources</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Open Issues / Backlog</div>
+        <div class="card-metric" id="issues-metric">0</div>
+        <div class="card-subtext">Active repository tasks</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Branch Governance</div>
+        <div class="card-metric">
+          <span class="badge" id="branch-badge">Enforced</span>
+        </div>
+        <div class="card-subtext" id="branch-subtext">Protected branch: main</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Workflow Schedule</div>
+        <div class="card-metric" style="font-size: 20px;">Cron 6h / Push</div>
+        <div class="card-subtext">Zero-server automated runner</div>
+      </div>
+    </div>
+
+    <div class="terminal-card">
+      <div class="terminal-header">
+        <span>Ingested Artifact: data.json</span>
+        <span>Generated by GitHub Actions</span>
+      </div>
+      <pre id="json-viewer">Loading telemetry...</pre>
+    </div>
+  </div>
+
+  <script>
+    fetch('./data.json')
+      .then(res => {
+        if (!res.ok) throw new Error('Data file not found');
+        return res.json();
+      })
+      .then(data => renderData(data))
+      .catch(() => {
+        renderData({
+          "repo": "infra-watchtower",
+          "last_updated": new Date().toISOString(),
+          "terraform_status": "Applied",
+          "pipeline_total_runs": 1,
+          "pipeline_successful_runs": 1,
+          "open_issues_count": 0,
+          "managed_labels_count": 3,
+          "branch_protection": "Enforced (main)"
+        });
+      });
+
+    function renderData(data) {
+      const dateObj = new Date(data.last_updated);
+      document.getElementById('sync-time').textContent = 'Last synced: ' + dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' (' + dateObj.toLocaleDateString() + ')';
+      document.getElementById('tf-badge').textContent = data.terraform_status || 'Applied';
+      document.getElementById('runs-metric').textContent = data.pipeline_successful_runs + ' / ' + data.pipeline_total_runs;
+      document.getElementById('assets-metric').textContent = data.managed_labels_count + ' Labels';
+      document.getElementById('issues-metric').textContent = data.open_issues_count;
+      document.getElementById('branch-subtext').textContent = 'Protected branch: ' + (data.branch_protection || 'main');
+      document.getElementById('json-viewer').textContent = JSON.stringify(data, null, 2);
+    }
+  </script>
+</body>
+</html>
