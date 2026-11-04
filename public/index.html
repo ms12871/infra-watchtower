@@ -114,6 +114,88 @@
       margin-top: 6px;
     }
 
+    .repositories-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .repositories-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+
+    .repositories-header h2 {
+      font-size: 16px;
+    }
+
+    .repositories-count {
+      color: var(--text-muted);
+      font-size: 13px;
+      font-family: var(--mono);
+    }
+
+    .repositories-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .repository {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .repository-info {
+      min-width: 0;
+    }
+
+    .repository-name {
+      color: var(--accent-blue);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .repository-name:hover {
+      text-decoration: underline;
+    }
+
+    .repository-description {
+      color: var(--text-muted);
+      font-size: 13px;
+      margin-top: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .repository-meta {
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .visibility {
+      border-radius: 5px;
+      border: 1px solid var(--border);
+      padding: 3px 7px;
+      margin-right: 8px;
+    }
+
+    @media (max-width: 600px) {
+      .repository { align-items: flex-start; flex-direction: column; gap: 6px; }
+      .repository-description { white-space: normal; }
+    }
+
     .terminal-card {
       background: var(--card-bg);
       border: 1px solid var(--border);
@@ -191,10 +273,18 @@
 
       <div class="card">
         <div class="card-label">Workflow Schedule</div>
-        <div class="card-metric" style="font-size: 20px;">Cron 6h / Push</div>
+        <div class="card-metric" style="font-size: 20px;">Cron 5m / Push</div>
         <div class="card-subtext">Zero-server automated runner</div>
       </div>
     </div>
+
+    <section class="repositories-card">
+      <div class="repositories-header">
+        <h2>Repositories</h2>
+        <span class="repositories-count" id="repositories-count">Loading...</span>
+      </div>
+      <div class="repositories-list" id="repositories-list"></div>
+    </section>
 
     <div class="terminal-card">
       <div class="terminal-header">
@@ -206,24 +296,39 @@
   </div>
 
   <script>
-    fetch('./data.json')
-      .then(res => {
-        if (!res.ok) throw new Error('Data file not found');
-        return res.json();
-      })
-      .then(data => renderData(data))
-      .catch(() => {
-        renderData({
-          "repo": "infra-watchtower",
-          "last_updated": new Date().toISOString(),
-          "terraform_status": "Applied",
-          "pipeline_total_runs": 1,
-          "pipeline_successful_runs": 1,
-          "open_issues_count": 0,
-          "managed_labels_count": 3,
-          "branch_protection": "Enforced (main)"
-        });
-      });
+    const fallbackData = {
+      "repo": "infra-watchtower",
+      "last_updated": new Date().toISOString(),
+      "terraform_status": "Applied",
+      "pipeline_total_runs": 1,
+      "pipeline_successful_runs": 1,
+      "open_issues_count": 0,
+      "managed_labels_count": 3,
+      "branch_protection": "Enforced (main)",
+      "repositories": [{
+        "name": "infra-watchtower",
+        "full_name": "infra-watchtower",
+        "html_url": "https://github.com/ms12871/infra-watchtower",
+        "private": false,
+        "visibility": "public",
+        "description": "Infrastructure operations dashboard",
+        "open_issues_count": 0,
+        "default_branch": "main"
+      }]
+    };
+
+    function loadTelemetry() {
+      fetch('./data.json?t=' + Date.now())
+        .then(res => {
+          if (!res.ok) throw new Error('Data file not found');
+          return res.json();
+        })
+        .then(data => renderData(data))
+        .catch(() => renderData(fallbackData));
+    }
+
+    loadTelemetry();
+    setInterval(loadTelemetry, 5 * 60 * 1000);
 
     function renderData(data) {
       const dateObj = new Date(data.last_updated);
@@ -233,7 +338,47 @@
       document.getElementById('assets-metric').textContent = data.managed_labels_count + ' Labels';
       document.getElementById('issues-metric').textContent = data.open_issues_count;
       document.getElementById('branch-subtext').textContent = 'Protected branch: ' + (data.branch_protection || 'main');
+      renderRepositories(data.repositories || []);
       document.getElementById('json-viewer').textContent = JSON.stringify(data, null, 2);
+    }
+
+    function renderRepositories(repositories) {
+      const list = document.getElementById('repositories-list');
+      document.getElementById('repositories-count').textContent = repositories.length + ' repositories';
+      list.replaceChildren();
+
+      repositories
+        .sort((a, b) => a.full_name.localeCompare(b.full_name))
+        .forEach(repository => {
+          const item = document.createElement('div');
+          item.className = 'repository';
+
+          const info = document.createElement('div');
+          info.className = 'repository-info';
+
+          const link = document.createElement('a');
+          link.className = 'repository-name';
+          link.href = repository.html_url;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          link.textContent = repository.full_name || repository.name;
+
+          const description = document.createElement('div');
+          description.className = 'repository-description';
+          description.textContent = repository.description || 'No description';
+
+          info.append(link, description);
+
+          const meta = document.createElement('div');
+          meta.className = 'repository-meta';
+          const visibility = document.createElement('span');
+          visibility.className = 'visibility';
+          visibility.textContent = 'Public';
+          meta.append(visibility, document.createTextNode((repository.open_issues_count || 0) + ' open issues'));
+
+          item.append(info, meta);
+          list.append(item);
+        });
     }
   </script>
 </body>
