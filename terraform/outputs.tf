@@ -5,5 +5,5 @@ output "managed_labels_count" {
 
 output "protected_branch" {
   description = "Branch protected by Terraform policy"
-  value       = github_branch_protection.main_protection.pattern
+  value       = github_branch_protection_v3.main_protection.branch
 }

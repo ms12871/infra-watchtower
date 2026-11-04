@@ -15,9 +15,9 @@ provider "github" {
 }
 
 # 1. Enforce branch protection on main
-resource "github_branch_protection" "main_protection" {
-  repository_id = var.github_repository
-  pattern       = var.default_branch
+resource "github_branch_protection_v3" "main_protection" {
+  repository = var.github_repository
+  branch     = var.default_branch
 
   enforce_admins = false
 
