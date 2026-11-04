@@ -14,6 +14,17 @@ provider "github" {
   # Reads token from the GITHUB_TOKEN environment variable in GitHub Actions
 }
 
+import {
+  to = github_branch_protection.main_protection
+  id = "${var.github_repository}:${var.default_branch}"
+}
+
+import {
+  for_each = toset(["infra-drift", "pipeline-ops", "security-hot"])
+  to       = github_issue_label.labels[each.value]
+  id       = "${var.github_repository}:${each.value}"
+}
+
 # 1. Enforce branch protection on main
 resource "github_branch_protection" "main_protection" {
   repository_id = var.github_repository
