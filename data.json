@@ -1,17 +1,10 @@
 {
   "repo": "ms12871/infra-watchtower",
-  "last_updated": "2026-11-04T20:49:11Z",
+  "last_updated": "2026-11-05T00:19:42Z",
   "terraform_status": "Applied",
-  "pipeline_total_runs": 10,
-  "pipeline_successful_runs": 8,
+  "pipeline_total_runs": 12,
+  "pipeline_successful_runs": 10,
   "open_issues_count": 0,
   "managed_labels_count": 3,
-  "branch_protection": "Enforced (main)",
-  "repositories": [
-  {
-    "message": "Rate Limit Exceeded",
-    "documentation_url": "https://docs.github.com/rest/repos/repos#create-a-repository-for-the-authenticated-user",
-    "status": "403"
-  }
-]
+  "branch_protection": "Enforced (main)"
 }
