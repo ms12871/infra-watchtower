@@ -45,27 +45,11 @@ jobs:
 
       - name: Collect Telemetry & Compile data.json
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TOTAL_RUNS=$(gh api repos/${{ github.repository }}/actions/runs --jq '.total_count')
           SUCCESS_RUNS=$(gh api repos/${{ github.repository }}/actions/runs --jq '[.workflow_runs[] | select(.conclusion=="success")] | length')
           OPEN_ISSUES=$(gh api repos/${{ github.repository }} --jq '.open_issues_count')
-          REPOSITORIES=$(gh api user/repos \
-            --paginate \
-            -f visibility=public \
-            -f affiliation=owner,collaborator,organization_member \
-            -f per_page=100 \
-            --jq '.[] | {
-              name,
-              full_name,
-              html_url,
-              private,
-              visibility,
-              description,
-              updated_at,
-              open_issues_count,
-              default_branch
-            }' | jq -s .)
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
           cat <<EOF > public/data.json
@@ -77,8 +61,7 @@ jobs:
             "pipeline_successful_runs": ${SUCCESS_RUNS:-1},
             "open_issues_count": ${OPEN_ISSUES:-0},
             "managed_labels_count": 3,
-            "branch_protection": "Enforced (main)",
-            "repositories": ${REPOSITORIES:-[]}
+            "branch_protection": "Enforced (main)"
           }
           EOF
 
